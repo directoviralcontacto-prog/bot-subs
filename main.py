@@ -2,6 +2,14 @@ import requests
 import time
 import os
 
+
+API_KEY = os.environ.get("API_KEY")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+CHAT_ID = os.environ.get("CHAT_ID")
+
+print("Variables cargadas correctamente")  # Solo para probar
+
+
 API_KEY = os.getenv("API_KEY")
 CHANNEL_ID = "UCTkZ8ndFFPI5dPEZHAhw-VA"  # tu channel id
 

@@ -3,23 +3,35 @@ import requests
 import time
 
 # ==============================
-# 1️⃣ Configura estas variables
+# 1️⃣ Variables de entorno
 # ==============================
-# Estos se leen de tus Secrets en Railway, no hace falta cambiar aquí si ya los añadiste
-BOT_TOKEN = os.environ.get("BOT_TOKEN")  # Tu token del bot de Telegram
-CHAT_ID = os.environ.get("CHAT_ID")      # Tu chat ID de Telegram
-ARCHIVO_VALOR = "ultimo_valor.txt"       # Archivo donde guardamos el último valor
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
+CHAT_ID = os.environ.get("CHAT_ID")
+API_KEY = os.environ.get("API_KEY")
+YOUTUBE_CHANNEL_ID = os.environ.get("YOUTUBE_CHANNEL_ID")
+ARCHIVO_VALOR = "ultimo_valor.txt"
 
 # ==============================
-# 2️⃣ Función para obtener el valor
+# 2️⃣ Función para obtener suscriptores de YouTube
 # ==============================
-def obtener_valor():
+def obtener_suscriptores():
     """
-    Aquí debes poner la lógica real para obtener el número de suscriptores
-    o cualquier valor que quieras monitorear.
+    Obtiene el número de suscriptores del canal de YouTube usando la API oficial
     """
-    # EJEMPLO: reemplaza esta línea con la llamada a la API de YouTube
-    return 118  # <-- Cambia esto según tu lógica real
+    try:
+        url = f"https://www.googleapis.com/youtube/v3/channels?part=statistics&id={YOUTUBE_CHANNEL_ID}&key={API_KEY}"
+        response = requests.get(url)
+        data = response.json()
+        
+        if "items" in data and len(data["items"]) > 0:
+            suscriptores = int(data["items"][0]["statistics"]["subscriberCount"])
+            return suscriptores
+        else:
+            print("Error: No se encontró el canal")
+            return None
+    except Exception as e:
+        print(f"Error al obtener suscriptores: {e}")
+        return None
 
 # ==============================
 # 3️⃣ Crear archivo si no existe
@@ -31,22 +43,38 @@ if not os.path.exists(ARCHIVO_VALOR):
 # ==============================
 # 4️⃣ Loop principal
 # ==============================
+print("Bot iniciado. Monitoreando suscriptores...")
+
 while True:
-    # Leer último valor guardado
-    with open(ARCHIVO_VALOR, "r") as f:
-        ultimo_valor = int(f.read())
+    try:
+        # Leer último valor guardado
+        with open(ARCHIVO_VALOR, "r") as f:
+            ultimo_valor = int(f.read())
 
-    valor_actual = obtener_valor()
+        valor_actual = obtener_suscriptores()
 
-    # Comparar con el valor anterior
-    if valor_actual != ultimo_valor:
-        # Guardar nuevo valor
-        with open(ARCHIVO_VALOR, "w") as f:
-            f.write(str(valor_actual))
+        if valor_actual is None:
+            print("No se pudo obtener el valor actual, reintentando...")
+            time.sleep(30)
+            continue
 
-        # Enviar notificación a Telegram
-        mensaje = f"¡Cambio detectado! Suscriptores: {valor_actual}"
-        requests.get(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensaje}")
+        print(f"Último valor: {ultimo_valor}, Valor actual: {valor_actual}")
 
-    # Espera 30 segundos antes de la siguiente revisión
-    time.sleep(30)
+        # Comparar con el valor anterior
+        if valor_actual != ultimo_valor:
+            # Guardar nuevo valor
+            with open(ARCHIVO_VALOR, "w") as f:
+                f.write(str(valor_actual))
+
+            # Enviar notificación a Telegram
+            mensaje = f"🎉 ¡Cambio detectado! Suscriptores: {valor_actual}"
+            url_telegram = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage?chat_id={CHAT_ID}&text={mensaje}"
+            requests.get(url_telegram)
+            print(f"Notificación enviada: {mensaje}")
+
+        # Espera 60 segundos antes de la siguiente revisión
+        time.sleep(60)
+
+    except Exception as e:
+        print(f"Error en el loop principal: {e}")
+        time.sleep(60)

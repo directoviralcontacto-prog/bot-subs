@@ -38,7 +38,7 @@ def obtener_suscriptores():
 # ==============================
 if not os.path.exists(ARCHIVO_VALOR):
     with open(ARCHIVO_VALOR, "w") as f:
-        f.write("0")
+        f.write("302")
 
 # ==============================
 # 4️⃣ Loop principal
